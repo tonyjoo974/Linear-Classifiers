@@ -1,0 +1,105 @@
+"""Softmax model."""
+
+import numpy as np
+
+
+class Softmax:
+    def __init__(self, n_class: int, lr: float, epochs: int, reg_const: float):
+        """Initialize a new classifier.
+
+        Parameters:
+            n_class: the number of classes
+            lr: the learning rate
+            epochs: the number of epochs to train for
+            reg_const: the regularization constant
+        """
+        self.w = None  # TODO: change this
+        self.lr = lr
+        self.epochs = epochs
+        self.reg_const = reg_const
+        self.n_class = n_class
+
+    def calc_gradient(self, X_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
+        """Calculate gradient of the softmax loss.
+
+        Inputs have dimension D, there are C classes, and we operate on
+        mini-batches of N examples.
+
+        Parameters:
+            X_train: a numpy array of shape (N, D) containing a mini-batch
+                of data
+            y_train: a numpy array of shape (N,) containing training labels;
+                y[i] = c means that X[i] has label c, where 0 <= c < C
+
+        Returns:
+            gradient with respect to weights w; an array of same shape as w
+        """
+        # TODO: implement me
+        dW = np.zeros(self.w.shape)
+        for i, x in enumerate(X_train):
+          f = np.dot(self.w, x)
+          f -= max(f)
+          for c in range(self.n_class):
+            prob = np.exp(f[c])/np.sum(np.exp(f))
+            if c == y_train[i]:
+              dW[c] -= (1 - prob)*x
+            else:
+              dW[c] += prob*x   
+
+        return dW
+
+    def train(self, X_train: np.ndarray, y_train: np.ndarray):
+        """Train the classifier.
+
+        Hint: operate on mini-batches of data for SGD.
+
+        Parameters:
+            X_train: a numpy array of shape (N, D) containing training data;
+                N examples with D dimensions
+            y_train: a numpy array of shape (N,) containing training labels
+        """
+        # TODO: implement me
+        N = X_train.shape[0]
+        dim = X_train.shape[1]
+        max_batch_size = 64
+        self.w = np.random.rand(self.n_class, dim)
+        indList = np.arange(N)
+        for epoch in range(self.epochs):
+            # if (epoch % 10) == 0:
+            print("epoch", epoch)
+            ind = 0
+            decay_rate = 0.5
+            decay_lr = self.lr / (1 + decay_rate * epoch)
+            np.random.shuffle(indList)
+            while ind < N:
+                batch_size = max_batch_size
+                entries_left = N - ind
+                if (int(entries_left / max_batch_size) == 0):
+                    batch_size = entries_left
+                X_train_batch = X_train[indList[ind:ind+batch_size]]
+                y_train_batch = y_train[indList[ind:ind+batch_size]]
+                grad = self.calc_gradient(X_train_batch, y_train_batch)
+                self.w -= decay_lr * grad
+                ind += batch_size
+
+        return
+
+    def predict(self, X_test: np.ndarray) -> np.ndarray:
+        """Use the trained weights to predict labels for test data points.
+
+        Parameters:
+            X_test: a numpy array of shape (N, D) containing testing data;
+                N examples with D dimensions
+
+        Returns:
+            predicted labels for the data in X_test; a 1-dimensional array of
+                length N, where each element is an integer giving the predicted
+                class.
+        """
+        # TODO: implement me
+        test_labels = []
+        for x in X_test:
+            y_predict = np.argmax(np.dot(self.w, x))
+            test_labels.append(int(y_predict))
+
+        return test_labels
